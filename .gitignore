@@ -1,0 +1,6 @@
+docs/*
+scripts/*
+.env
+.env.*
+CLAUDE.md
+CONTEXT.md
