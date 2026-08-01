@@ -1,0 +1,17 @@
+{
+  "name": "@react-whatsapp-templates/core",
+  "version": "0.0.0",
+  "description": "Template IR, Meta wire types and field rules. No React dependency.",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts --clean"
+  }
+}

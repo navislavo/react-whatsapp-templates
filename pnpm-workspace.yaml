@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+  - examples/*
+allowBuilds:
+  # tsx and vitest need esbuild's platform binary linked at install time.
+  esbuild: true

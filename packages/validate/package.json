@@ -1,0 +1,20 @@
+{
+  "name": "@react-whatsapp-templates/validate",
+  "version": "0.0.0",
+  "description": "The rule catalog and the diagnostics engine.",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts --clean"
+  },
+  "dependencies": {
+    "@react-whatsapp-templates/core": "workspace:*"
+  }
+}

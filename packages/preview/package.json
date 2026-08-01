@@ -1,0 +1,22 @@
+{
+  "name": "@react-whatsapp-templates/preview",
+  "version": "0.0.0",
+  "description": "The preview server. Near-empty until the preview ticket.",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts --clean"
+  },
+  "dependencies": {
+    "@react-whatsapp-templates/core": "workspace:*",
+    "@react-whatsapp-templates/render": "workspace:*",
+    "@react-whatsapp-templates/validate": "workspace:*"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@react-whatsapp-templates/core": ["./packages/core/src/index.ts"],
+      "@react-whatsapp-templates/components": ["./packages/components/src/index.ts"],
+      "@react-whatsapp-templates/render": ["./packages/render/src/index.ts"],
+      "@react-whatsapp-templates/validate": ["./packages/validate/src/index.ts"],
+      "@react-whatsapp-templates/preview": ["./packages/preview/src/index.ts"],
+      "@react-whatsapp-templates/cli": ["./packages/cli/src/index.ts"],
+      "react-whatsapp-templates": ["./packages/react-whatsapp-templates/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*",
+    "packages/*/test/**/*",
+    "packages/*/tsdown.config.ts",
+    "examples/*/**/*",
+    "type-tests/**/*",
+    "vitest.config.ts"
+  ]
+}
