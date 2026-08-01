@@ -1,0 +1,25 @@
+{
+  "name": "react-whatsapp-templates-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/*\" build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "demo": "pnpm -s build && whatsapp demo examples/basic/templates/store-closure.tsx"
+  },
+  "devDependencies": {
+    "@react-whatsapp-templates/cli": "workspace:*",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "react": "^19.2.8",
+    "tsdown": "^0.22.14",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

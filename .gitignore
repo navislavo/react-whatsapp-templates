@@ -4,3 +4,7 @@ scripts/*
 .env.*
 CLAUDE.md
 CONTEXT.md
+
+node_modules/
+dist/
+*.tsbuildinfo
