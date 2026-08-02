@@ -10,7 +10,14 @@ export {
   toSendPayload,
   toTemplateMessage,
   type SendPayloadOptions,
+  type SlotValue,
   type SlotValues,
-  type TemplateMessageOptions,
 } from './to-send-payload'
-export { WalkError, walk } from './walk'
+export {
+  WalkError,
+  walk,
+  type AnyTemplate,
+  type EmptyProps,
+  type PropsOf,
+  type TemplateComponent,
+} from './walk'

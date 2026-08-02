@@ -106,6 +106,9 @@ importers:
       '@react-whatsapp-templates/core':
         specifier: workspace:*
         version: link:../core
+      '@react-whatsapp-templates/validate':
+        specifier: workspace:*
+        version: link:../validate
       react:
         specifier: '>=18'
         version: 19.2.8

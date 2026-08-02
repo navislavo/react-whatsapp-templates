@@ -1,9 +1,16 @@
 import { hostKindOf, type HostKind } from '@react-whatsapp-templates/components'
-import type {
-  ComponentIR,
-  LanguageCode,
-  TemplateCategory,
-  TemplateIR,
+import {
+  createVarToken,
+  propOf,
+  slotDeclaration,
+  type ComponentIR,
+  type LanguageCode,
+  type SlotDeclaration,
+  type SlotIR,
+  type TemplateCategory,
+  type TemplateIR,
+  type Var,
+  type Vars,
 } from '@react-whatsapp-templates/core'
 import { Fragment, isValidElement, type ReactElement, type ReactNode } from 'react'
 
@@ -14,6 +21,29 @@ import { Fragment, isValidElement, type ReactElement, type ReactNode } from 'rea
 export class WalkError extends Error {
   override name = 'WalkError'
 }
+
+/** A template authored as a component, whose props arrive as opaque tokens. */
+export type TemplateComponent<P> = (props: Vars<P>) => ReactNode
+
+/**
+ * What the compilers accept: the component itself — the only form that can
+ * carry props, since an author cannot mint a `Var` — or an element of a
+ * template that has none.
+ */
+export type AnyTemplate = TemplateComponent<never> | ReactNode
+
+/** A template with no props at all. */
+export type EmptyProps = Record<string, never>
+
+/**
+ * The values a template must be sent with, recovered from the component through
+ * the phantom type each token carries. Real values, never tokens.
+ */
+export type PropsOf<T> = T extends (props: infer P) => unknown
+  ? P extends Vars<infer Q>
+    ? Q
+    : EmptyProps
+  : EmptyProps
 
 type Props = Record<string, unknown>
 
@@ -29,8 +59,13 @@ interface HostNode {
  * A synchronous tree walk — not a renderer and not a reconciler. A template is
  * a fixed shallow schema, so the walk evaluates through function components and
  * Fragments until it reaches host components.
+ *
+ * The component is evaluated exactly once, with every prop replaced by an
+ * opaque token (ADR-0001). The send payload carries no rendered text, so there
+ * is never a second evaluation with real values.
  */
-export function walk(node: ReactNode): TemplateIR {
+export function walk(template: AnyTemplate): TemplateIR {
+  const { node, props } = evaluateRoot(template)
   const roots = collectHosts(node)
   const root = roots[0]
 
@@ -39,11 +74,12 @@ export function walk(node: ReactNode): TemplateIR {
   }
 
   const components: ComponentIR[] = []
+  const slots: SlotIR[] = []
 
   for (const child of collectHosts(root.props['children'] as ReactNode)) {
     switch (child.kind) {
       case 'body':
-        components.push({ kind: 'body', text: bodyText(child.props['children']) })
+        components.push({ kind: 'body', text: bodyText(child.props['children'], slots) })
         break
       case 'template':
         throw new WalkError('<Template> cannot be nested inside another <Template>.')
@@ -55,8 +91,52 @@ export function walk(node: ReactNode): TemplateIR {
     language: stringProp(root.props, 'language') as LanguageCode,
     category: stringProp(root.props, 'category') as TemplateCategory,
     components,
-    slots: [],
+    slots: mergeSlots(slots),
+    props,
   }
+}
+
+/**
+ * Evaluates the component with token props, or takes an element as it stands.
+ * The props a template has are the ones it reads: `Vars<P>` is erased by the
+ * time the walk runs, so nothing else about them can be known.
+ */
+function evaluateRoot(template: AnyTemplate): { node: ReactNode; props: string[] } {
+  if (typeof template !== 'function') return { node: template, props: [] }
+
+  if (hostKindOf(template) !== undefined) {
+    throw new WalkError(
+      'A template is your own component, or an element of one — not one of ours. ' +
+        'Did you mean <Template …>?',
+    )
+  }
+
+  const read: string[] = []
+  const component = template as (props: Props) => ReactNode
+  return { node: component(tokenProps(read)), props: read }
+}
+
+/** Mints one token per prop the component reads, in the order it reads them. */
+function tokenProps(read: string[]): Props {
+  const tokens = new Map<string, Var<unknown>>()
+
+  return new Proxy({} as Props, {
+    get(_target, key): unknown {
+      // A symbol key is the runtime probing the object, never a prop.
+      if (typeof key !== 'string') return undefined
+
+      const existing = tokens.get(key)
+      if (existing !== undefined) return existing
+
+      const token = createVarToken(key)
+      tokens.set(key, token)
+      read.push(key)
+      return token
+    },
+    has(_target, key): boolean {
+      return typeof key === 'string'
+    },
+  })
 }
 
 /**
@@ -115,11 +195,73 @@ function visit(node: ReactNode, found: HostNode[]): void {
   )
 }
 
-function bodyText(children: unknown): string {
-  if (typeof children !== 'string') {
-    throw new WalkError('<Body> takes a single string as its children.')
+/**
+ * Joins a body's parts into Meta's own text form, recording a slot for every
+ * variable on the way past. A variable used twice writes `{{name}}` twice and
+ * is merged into a single slot afterwards.
+ */
+function bodyText(children: unknown, slots: SlotIR[]): string {
+  let text = ''
+
+  for (const part of bodyParts(children)) {
+    if (typeof part === 'string') {
+      text += part
+      continue
+    }
+
+    text += `{{${part.name}}}`
+    slots.push({ name: part.name, component: 'body', example: part.example, prop: part.prop })
   }
-  return children
+
+  return text
+}
+
+function bodyParts(children: unknown): Array<string | SlotDeclaration> {
+  const parts: Array<string | SlotDeclaration> = []
+  visitPart(children, parts)
+  return parts
+}
+
+function visitPart(part: unknown, parts: Array<string | SlotDeclaration>): void {
+  if (Array.isArray(part)) {
+    for (const child of part as unknown[]) visitPart(child, parts)
+    return
+  }
+
+  if (typeof part === 'string') {
+    parts.push(part)
+    return
+  }
+
+  const declaration = slotDeclaration(part)
+  if (declaration !== undefined) {
+    parts.push(declaration)
+    return
+  }
+
+  throw new WalkError(`<Body> takes text and variables — got ${describe(part)}.`)
+}
+
+/**
+ * Merges repeated declarations of one variable. Two declarations are the same
+ * variable when they agree on both the wire name and the prop, in which case
+ * the surviving slot keeps the first declaration's position and the **last**
+ * one's example — specified behaviour, not an accident (ADR-0007). Overwriting
+ * a `Map` entry replaces the value and leaves its insertion order alone, which
+ * is exactly that rule.
+ *
+ * Declarations that agree on only one of the two survive as separate slots.
+ * That is how the validator comes to see a wire name shared by two props, or a
+ * prop split across two wire names.
+ */
+function mergeSlots(slots: readonly SlotIR[]): SlotIR[] {
+  const merged = new Map<string, SlotIR>()
+
+  for (const slot of slots) {
+    merged.set(`${typeof slot.name}:${slot.name} ${slot.prop}`, slot)
+  }
+
+  return [...merged.values()]
 }
 
 function stringProp(props: Props, name: string): string {
@@ -132,6 +274,12 @@ function stringProp(props: Props, name: string): string {
 
 function describe(value: unknown): string {
   if (typeof value === 'string') return `<${value}>`
+
+  const prop = propOf(value)
+  if (prop !== undefined) {
+    return `the prop "${prop}", which is only a variable once it is passed to variable()`
+  }
+
   if (typeof value === 'object' && value !== null) return value.constructor?.name ?? 'object'
   return String(value)
 }

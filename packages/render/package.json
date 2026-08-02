@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "@react-whatsapp-templates/components": "workspace:*",
-    "@react-whatsapp-templates/core": "workspace:*"
+    "@react-whatsapp-templates/core": "workspace:*",
+    "@react-whatsapp-templates/validate": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18"

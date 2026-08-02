@@ -9,6 +9,7 @@ const ir = {
   category: 'UTILITY',
   components: [{ kind: 'body', text: 'We are closed on Monday for a public holiday.' }],
   slots: [],
+  props: [],
 }
 
 test('walks a template written directly', () => {
