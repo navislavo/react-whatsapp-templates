@@ -1,5 +1,5 @@
-import { toCreatePayload, toSendPayload } from '@react-whatsapp-templates/render'
-import { createElement } from 'react'
+import { toCreatePayload, toSendPayload, walk } from '@react-whatsapp-templates/render'
+import type { SlotIR } from '@react-whatsapp-templates/core'
 import { loadTemplate } from '../load-template'
 
 /** The sample recipient from `docs/marketing-templates/custom-marketing-templates.md`. */
@@ -12,6 +12,10 @@ export interface DemoOptions {
 /**
  * Prints both Meta payloads for a template — the JSON that would register it
  * and the JSON that would send it. Nothing is sent anywhere.
+ *
+ * Send values are the caller's, and a command line has none, so the demo sends
+ * each variable's own example. Every example is by definition a valid value for
+ * its variable, which is why the preview renders from them too (ADR-0007).
  */
 export async function demo(
   file: string,
@@ -19,14 +23,18 @@ export async function demo(
   out: (line: string) => void = console.log,
 ): Promise<void> {
   const { component } = await loadTemplate(file)
-  const element = createElement(component, {})
+  const values = exampleValues(walk(component).slots)
 
-  const create = await toCreatePayload(element)
-  const send = await toSendPayload(element, { to: options.to ?? SAMPLE_RECIPIENT })
+  const create = await toCreatePayload(component)
+  const send = await toSendPayload(component, values, { to: options.to ?? SAMPLE_RECIPIENT })
 
   out(`# create payload — POST /{WABA-ID}/message_templates`)
   out(JSON.stringify(create, null, 2))
   out('')
   out(`# send payload — POST /{PHONE-NUMBER-ID}/messages`)
   out(JSON.stringify(send, null, 2))
+}
+
+function exampleValues(slots: readonly SlotIR[]): Record<string, string> {
+  return Object.fromEntries(slots.map((slot) => [slot.prop, slot.example]))
 }

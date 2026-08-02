@@ -7,11 +7,40 @@ export {
   type InvalidTemplateName,
   type ValidateTemplateName,
 } from './template-name'
+export {
+  WIRE_NAME_PATTERN,
+  isWireName,
+  type InvalidWireName,
+  type ValidateWireName,
+} from './wire-name'
+export {
+  createVarToken,
+  propOf,
+  slotDeclaration,
+  variable,
+  type Slot,
+  type SlotDeclaration,
+  type Var,
+  type VariableOptions,
+  type Vars,
+} from './variable'
+export { currency, dateTime } from './parameter'
+export { parameterFormat, type ParameterFormat } from './parameter-format'
 export type { BodyIR, ComponentIR, SlotIR, TemplateIR } from './ir'
-export type { CreateBodyComponent, CreateComponent, CreateTemplatePayload } from './wire/create'
 export type {
+  CreateBodyComponent,
+  CreateBodyExample,
+  CreateComponent,
+  CreateNamedParamExample,
+  CreateTemplatePayload,
+} from './wire/create'
+export type {
+  CurrencyValue,
+  DateTimeValue,
   SendBodyComponent,
   SendComponent,
+  SendCurrencyParameter,
+  SendDateTimeParameter,
   SendParameter,
   SendPayload,
   SendTextParameter,

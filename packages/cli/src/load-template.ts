@@ -1,10 +1,14 @@
 import { pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
-import type { ComponentType } from 'react'
+import type { TemplateComponent } from '@react-whatsapp-templates/render'
 
 export interface LoadedTemplate {
   readonly path: string
-  readonly component: ComponentType<Record<string, never>>
+  /**
+   * A template loaded from disk has no props the CLI can know about, so they
+   * are typed as the strings a command line can supply.
+   */
+  readonly component: TemplateComponent<Record<string, string>>
 }
 
 /**
@@ -21,5 +25,5 @@ export async function loadTemplate(file: string): Promise<LoadedTemplate> {
     throw new Error(`${file} has no default export — a template module must default-export one.`)
   }
 
-  return { path, component: component as ComponentType<Record<string, never>> }
+  return { path, component: component as TemplateComponent<Record<string, string>> }
 }
